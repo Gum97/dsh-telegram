@@ -49,11 +49,32 @@ function settingsDouble() {
   };
 }
 
-function ctxWith(settings) {
-  return {
-    get: (name) => (name === 'settings' ? settings : undefined),
+/**
+ * A context whose `settings` service arrives through `ctx.inject`.
+ *
+ * `ctx.inject(names, cb)` runs the callback with a context carrying the named
+ * services once they are all available. Modelling it faithfully — including
+ * the delayed variant below — is what keeps these tests honest about startup
+ * ordering rather than assuming the service is there the moment `apply` runs.
+ */
+function ctxWith(settings, { defer = false } = {}) {
+  const pending = [];
+  const ctx = {
+    inject: (names, callback) => {
+      const run = () => {
+        if (!names.every((name) => name === 'settings' && settings)) return;
+        callback({ settings, logger: ctx.logger });
+      };
+      if (defer) pending.push(run);
+      else run();
+    },
+    /** Activate services that were not ready during `apply`. */
+    release: () => {
+      for (const run of pending.splice(0)) run();
+    },
     logger: { warn() {}, error() {}, info() {} },
   };
+  return ctx;
 }
 
 test('the namespace is registered under the key the card is dispatched on', () => {
@@ -83,8 +104,31 @@ test('entry keys the schema does not declare are kept out of base', () => {
 });
 
 test('a missing settings provider degrades instead of failing the channel', () => {
-  const ctx = { get: () => undefined, logger: { warn() {} } };
-  assert.equal(registerSettings(ctx, { enabled: true }), undefined);
+  // A composition without a settings service must still run the channel from
+  // its entry config, so the handle exists but reports nothing stored.
+  const ctx = ctxWith(undefined);
+  const handle = registerSettings(ctx, { enabled: true });
+
+  assert.equal(handle.current(), undefined);
+  assert.equal(handle.scope, undefined);
+});
+
+test('settings that arrive after apply are still picked up', () => {
+  // The bug this guards: reading the service synchronously during `apply`
+  // returns undefined whenever its fiber is not active yet, which silently
+  // costs the settings card and `/start`'s ability to record an owner. The
+  // registration must wait for the service instead of racing it.
+  const settings = settingsDouble();
+  const ctx = ctxWith(settings, { defer: true });
+
+  const handle = registerSettings(ctx, {});
+  assert.equal(settings.calls.register.length, 0, 'nothing registers before the service exists');
+  assert.equal(handle.scope, undefined);
+
+  ctx.release();
+
+  assert.equal(settings.calls.register.length, 1, 'registration happens once the service arrives');
+  assert.ok(handle.scope, 'the handle exposes the scope /start writes through');
 });
 
 test('a registration failure is contained', () => {
@@ -95,7 +139,9 @@ test('a registration failure is contained', () => {
   });
 
   // The channel still works from entry config; it must not take the boot down.
-  assert.equal(registerSettings(ctx, {}), undefined);
+  const handle = registerSettings(ctx, {});
+  assert.equal(handle.current(), undefined);
+  assert.equal(handle.scope, undefined);
 });
 
 test('the current value follows commits', () => {

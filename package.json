@@ -1,6 +1,6 @@
 {
   "name": "dsh-telegram",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Telegram channel for DeepSeek Harness — rich tables and lists, real image delivery both ways, inline-keyboard questions, and in-chat model/preset/mode control",
   "keywords": [
     "dsh",
