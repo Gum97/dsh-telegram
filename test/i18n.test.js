@@ -33,6 +33,8 @@ const USED_KEYS = [
   'languageLabel',
   'languageHint',
   'enabledLabel',
+  'routeQuestionsLabel',
+  'routeQuestionsHint',
   'allowedLabel',
   'allowedHint',
   'workspaceLabel',

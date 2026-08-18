@@ -40,7 +40,9 @@ import { ensureStyles, styles } from './styles';
 const NS = 'telegram';
 
 /** Fields that only take effect after DSH restarts, so the card can say so. */
-const RESTART_FIELDS = new Set(['tokenRef', 'workspaceRoot', 'enabled']);
+// `routeQuestions` belongs here because the provider slot is claimed once at
+// startup: flipping it later changes nothing until the channel starts again.
+const RESTART_FIELDS = new Set(['tokenRef', 'workspaceRoot', 'enabled', 'routeQuestions']);
 
 type Descriptor = {
   ns: string;
@@ -335,6 +337,7 @@ function TelegramCard(props: any) {
           </div>
 
           {toggle('enabled', t('enabledLabel'))}
+          {toggle('routeQuestions', t('routeQuestionsLabel'), t('routeQuestionsHint'))}
           {field('allowedUsers', t('allowedLabel'), t('allowedHint'))}
           {field('workspaceRoot', t('workspaceLabel'), t('workspaceHint'))}
 

@@ -142,6 +142,7 @@ hiding Vietnamese behind the Chinese option.
 | `allowedUsers` | `[]` | Telegram user ids allowed to talk to the bot; empty means unclaimed |
 | `language` | `vi` | `vi` or `en`, for bot messages and the settings card |
 | `workspaceRoot` | `process.cwd()` | Working directory for channel sessions |
+| `routeQuestions` | `true` | Answer a Telegram session's questions in Telegram, not the browser |
 | `streaming` | `true` | Edit one message in place while the answer streams |
 | `showToolActivity` | `true` | Show which tool is running inside the preview |
 | `rich` | `true` | Use real tables and lists (`sendRichMessage`) |
@@ -176,18 +177,24 @@ the message.
 the Web UI. The reply router tracks which turns it opened so those replies are
 not duplicated into the chat.
 
-## Known limitation: questions in a web profile
+## Questions in a web profile
 
 The host allows exactly one user-questions provider process-wide, and in a web
-profile the Web bridge (`dsh-host-apiproxy`, loaded by
-`@deepseek-ai/dsh-web-app`) registers first. This channel then loses the slot,
-so a question raised during a Telegram turn is answered **in the browser**, and
-the bot appears to stop mid-turn until someone answers it there. The startup
-log says so explicitly.
+profile the Web bridge (`dsh-host-apiproxy`) registers first. Left alone, that
+means a question raised during a Telegram turn is answered **in the browser**,
+and the bot appears to stop mid-turn — the worst outcome for someone holding a
+phone.
 
-There is no per-session arbitration to hook into, so no amount of work in this
-plugin changes it: inline keyboards need a profile where nothing else claims
-the provider — a headless profile running the channel on its own.
+So the channel installs a router over whichever provider holds the slot:
+sessions bound to a Telegram chat get inline keyboards, and every other session
+reaches the browser exactly as before. Set `routeQuestions: false` to switch it
+off and restore the plain behaviour.
+
+This shares a slot the host models as exclusive, so it is written to fail safe:
+it checks the field is writable and the incumbent is recognisable before
+touching anything, hands the incumbent every session it cannot resolve, passes
+that provider's rejections through untouched, and restores it on disposal. A
+future DSH that makes the field private costs this feature, not the boot.
 
 ## Tests
 
