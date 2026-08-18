@@ -1,0 +1,11 @@
+node_modules/
+
+# The client bundle is a build artifact, rebuilt by `npm run build:client` and
+# regenerated automatically before publishing. Keeping it out of git avoids
+# diff noise on every rebuild; `files` in package.json still ships it in the
+# tarball, which is what installers actually consume.
+lib/client.js
+lib/client.js.map
+
+*.tgz
+.DS_Store

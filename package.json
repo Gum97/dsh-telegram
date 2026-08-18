@@ -1,0 +1,72 @@
+{
+  "name": "dsh-telegram",
+  "version": "0.1.0",
+  "description": "Telegram channel for DeepSeek Harness — rich tables and lists, real image delivery both ways, inline-keyboard questions, and in-chat model/preset/mode control",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "telegram",
+    "chatbot",
+    "plugin"
+  ],
+  "homepage": "https://github.com/Gum97/dsh-telegram#readme",
+  "bugs": "https://github.com/Gum97/dsh-telegram/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gum97/dsh-telegram.git"
+  },
+  "author": "Gum97",
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./markdown": "./lib/markdown.js",
+    "./api": "./lib/api.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "LICENSE",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-primitives",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-api-remotes"
+      ],
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build:client": "tsdown --config tsdown.client.ts",
+    "prepublishOnly": "npm run build:client && npm test",
+    "test": "node --test 'test/*.test.js'"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@deepseek-ai/schemastery": "*"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-agent": "*",
+    "@deepseek-ai/dsh-llm": "*"
+  },
+  "devDependencies": {
+    "@types/react": "~18.3.31",
+    "react": "^18.3.1",
+    "tsdown": "^0.22.14",
+    "typescript": "^5.9.3"
+  }
+}
