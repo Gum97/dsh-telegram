@@ -6,19 +6,25 @@ Written to fix four concrete failures of the generic channel bridge:
 
 | Problem | Cause | Fix |
 |---|---|---|
-| Bold, links and tables render as literal markdown | `parse_mode` was never set | Markdown is compiled to Telegram HTML, with tables laid out as aligned monospace |
+| Bold, links and tables render as literal markdown | `parse_mode` was never set | Markdown is compiled to Telegram's rich blocks — real tables and lists — with an HTML path behind it |
 | The agent cannot send images | the reply path only ever passed `{ text }` | file references in a reply become real `sendPhoto` / `sendDocument` uploads |
 | Questions have no answer buttons | no `UserQuestionProvider` was registered | questions render as inline keyboards, with multi-select and free-text answers |
 | No way to change model from chat | only `/new` existed | `/model`, `/preset`, `/mode`, `/status`, `/stop`, `/compact` |
 
+> **Status: early.** Verified end-to-end against a live bot on DSH `0.1.0-rc.7`,
+> but not yet tested by anyone else or against another DSH release. Expect the
+> rough edges of a `0.1.0`.
+
 ## Install
 
 ```sh
-cd $DSH_HOME/profiles/web
-pnpm add file:/path/to/dsh-telegram
+dsh plugin --profile web add github:Gum97/dsh-telegram
 ```
 
-Add the bundle to the profile's `package.json`:
+`dsh plugin` forwards to pnpm in the profile directory, so a git URL, a local
+path (`file:../dsh-telegram`) or a published package name all work.
+
+Then add the bundle to the profile's `package.json`:
 
 ```json
 {
