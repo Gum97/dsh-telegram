@@ -1,5 +1,7 @@
 # dsh-telegram
 
+[![npm](https://img.shields.io/npm/v/dsh-telegram)](https://www.npmjs.com/package/dsh-telegram)
+
 A Telegram channel for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 
 Written to fix four concrete failures of the generic channel bridge:
@@ -18,11 +20,12 @@ Written to fix four concrete failures of the generic channel bridge:
 ## Install
 
 ```sh
-dsh plugin --profile web add github:Gum97/dsh-telegram
+dsh plugin --profile web add dsh-telegram
 ```
 
-`dsh plugin` forwards to pnpm in the profile directory, so a git URL, a local
-path (`file:../dsh-telegram`) or a published package name all work.
+`dsh plugin` forwards to pnpm in the profile directory, so the published
+package above, a git URL (`github:Gum97/dsh-telegram`) or a local path
+(`file:../dsh-telegram`) all work.
 
 Then add the bundle to the profile's `package.json`:
 
