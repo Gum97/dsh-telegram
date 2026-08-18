@@ -93,6 +93,7 @@ instance and break its hooks at runtime.
 
 | Command | Effect |
 |---|---|
+| `/start` | Claim an unclaimed bot (see below) |
 | `/new` | Start a fresh session for this chat |
 | `/model` | Pick a provider/model from buttons, or `/model provider/model` |
 | `/preset` | Choose the agent preset used by the next session |
@@ -101,6 +102,20 @@ instance and break its hooks at runtime.
 | `/stop` | Cancel the running turn |
 | `/compact` | Compact conversation history |
 | `/help` | List commands |
+
+### Who may use the bot
+
+`allowedUsers` decides, and an empty list means the bot is *unclaimed* rather
+than open to everyone.
+
+The first person to send `/start` to an unclaimed bot is recorded as its owner
+and the door closes behind them — the way first-run device setup works. Every
+later stranger is refused and shown their own user id to pass along, and the
+owner widens access from Settings → Plugins → Telegram.
+
+This matters because a bot's username is discoverable. A bot that accepted
+anyone would hand whoever found it an agent running shell commands on the
+owner's machine.
 
 ## Configuration
 

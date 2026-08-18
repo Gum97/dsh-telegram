@@ -15,7 +15,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { SETTINGS_NAMESPACE, SettingsSchema, isLiveChange, registerSettings } from '../lib/settings.js';
+import {
+  SETTINGS_NAMESPACE,
+  SettingsSchema,
+  decideStart,
+  isLiveChange,
+  registerSettings,
+} from '../lib/settings.js';
 
 /** A settings service double recording how the plugin registered. */
 function settingsDouble() {
@@ -151,6 +157,54 @@ test('the schema rejects a user list that is not a list', () => {
   // The card converts its comma-separated line before saving; if that ever
   // regressed, the save must fail loudly rather than store a string.
   assert.throws(() => new SettingsSchema({ allowedUsers: '111,222' }));
+});
+
+/* ------------------------- first-run ownership ------------------------- */
+
+test('the first /start on an unclaimed bot takes ownership', () => {
+  assert.deepEqual(decideStart({ allowedUsers: [] }, 339028172), {
+    kind: 'claim',
+    userId: '339028172',
+  });
+});
+
+test('a bot with no settings section at all is still claimable', () => {
+  assert.equal(decideStart({}, 42).kind, 'claim');
+  assert.equal(decideStart(undefined, 42).kind, 'claim');
+});
+
+test('once claimed, a stranger sending /start is refused', () => {
+  // This is the whole point of the mechanism: a bot username is discoverable,
+  // so an open /start would hand anyone an agent running shell commands on the
+  // owner's machine.
+  assert.deepEqual(decideStart({ allowedUsers: ['339028172'] }, 999), { kind: 'denied' });
+});
+
+test('the owner sending /start again is simply allowed', () => {
+  assert.deepEqual(decideStart({ allowedUsers: ['339028172'] }, 339028172), { kind: 'allowed' });
+});
+
+test('a second /start cannot re-claim a bot that already has an owner', () => {
+  // A claim path that re-fired would let the next stranger overwrite the owner
+  // and lock them out of their own bot.
+  const claimed = { allowedUsers: ['111'] };
+  for (const stranger of [222, 333, 111]) {
+    assert.notEqual(decideStart(claimed, stranger).kind, 'claim');
+  }
+});
+
+test('ids are compared as text, so a numeric id matches its stored string', () => {
+  assert.equal(decideStart({ allowedUsers: ['339028172'] }, 339028172).kind, 'allowed');
+  assert.equal(decideStart({ allowedUsers: [339028172] }, '339028172').kind, 'allowed');
+});
+
+test('an update with no identifiable sender never claims the bot', () => {
+  // Telegram always identifies a sender, so a missing id is a shape this code
+  // does not understand — claiming ownership for an unknown party would be the
+  // worst possible reading of it.
+  for (const missing of [undefined, null, '']) {
+    assert.deepEqual(decideStart({ allowedUsers: [] }, missing), { kind: 'denied' });
+  }
 });
 
 test('the bot token itself is not a settings field', () => {
