@@ -117,13 +117,27 @@ This matters because a bot's username is discoverable. A bot that accepted
 anyone would hand whoever found it an agent running shell commands on the
 owner's machine.
 
+### Language
+
+The channel speaks Vietnamese or English, chosen by the `language` setting and
+switchable from the settings card. It governs both faces at once — the bot's
+messages and the card's own labels — because a bot answering in Vietnamese
+from a card labelled in English is one product speaking two languages at the
+user.
+
+This is a channel setting rather than the host locale on purpose: DSH ships
+`zh` and `en` only, and its locale schema is a union over exactly those two, so
+a `vi` preference is rejected outright. Following the host would have meant
+hiding Vietnamese behind the Chinese option.
+
 ## Configuration
 
 | Key | Default | Meaning |
 |---|---|---|
 | `enabled` | `true` | Turn the channel off without removing it |
 | `tokenRef` | `TELEGRAM_BOT_TOKEN` | Credential name holding the bot token |
-| `allowedUsers` | `[]` | Telegram user ids allowed to talk to the bot; empty allows everyone |
+| `allowedUsers` | `[]` | Telegram user ids allowed to talk to the bot; empty means unclaimed |
+| `language` | `vi` | `vi` or `en`, for bot messages and the settings card |
 | `workspaceRoot` | `process.cwd()` | Working directory for channel sessions |
 | `streaming` | `true` | Edit one message in place while the answer streams |
 | `showToolActivity` | `true` | Show which tool is running inside the preview |

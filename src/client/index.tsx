@@ -28,6 +28,12 @@ import {
   IconChevronDownOutline14,
 } from '@deepseek-ai/dsh-client-ui-primitives';
 
+import {
+  DEFAULT_LANGUAGE,
+  LANGUAGES,
+  LANGUAGE_NAMES,
+  translator,
+} from '../../lib/i18n.js';
 import { ensureStyles, styles } from './styles';
 
 /** The namespace this card edits. Must match `SETTINGS_NAMESPACE` on the Host. */
@@ -80,6 +86,14 @@ function TelegramCard(props: any) {
   const tokenRef = String(
     (draft.tokenRef as string) ?? descriptor?.value?.tokenRef ?? 'TELEGRAM_BOT_TOKEN',
   );
+
+  // The staged language wins over the saved one, so the card re-labels itself
+  // as soon as the picker moves rather than only after a save. Seeing the
+  // result before committing is the whole point of a language control.
+  const language = String(
+    (draft.language as string) ?? descriptor?.value?.language ?? DEFAULT_LANGUAGE,
+  );
+  const t = translator(language);
 
   /** Load the section, and whether a token is stored for the reference it names. */
   const reload = React.useCallback(async () => {
@@ -199,7 +213,7 @@ function TelegramCard(props: any) {
         </label>
         {overridden(key) ? (
           <button type="button" className={styles.reset} onClick={() => void resetField(key)}>
-            Đặt lại
+            {t('reset')}
           </button>
         ) : null}
       </div>
@@ -240,12 +254,10 @@ function TelegramCard(props: any) {
         onClick={() => setOpen(!open)}
       >
         <span className={styles.headText}>
-          <span className={styles.name}>Telegram</span>
-          <span className={styles.description}>
-            Kênh Telegram: gửi ảnh, bảng thật, câu hỏi có nút bấm, đổi model trong chat.
-          </span>
+          <span className={styles.name}>{t('cardTitle')}</span>
+          <span className={styles.description}>{t('cardDescription')}</span>
         </span>
-        {dirty ? <span className={styles.pending}>chưa lưu</span> : null}
+        {dirty ? <span className={styles.pending}>{t('unsaved')}</span> : null}
         <IconChevronDownOutline14
           className={open ? `${styles.chevron} ${styles.chevronOpen}` : styles.chevron}
         />
@@ -256,56 +268,82 @@ function TelegramCard(props: any) {
           <div className={styles.field}>
             <div className={styles.labelRow}>
               <label className={styles.label} htmlFor="telegram-token">
-                Bot token
+                {t('tokenLabel')}
               </label>
-              {/* A configured token is the state a user scans for, so it gets
-                  the check and the success colour. The other two stay neutral:
-                  a channel that is simply not set up yet is not an error. */}
-              <span className={tokenConfigured ? `${styles.badge} ${styles.badgeOk}` : styles.badge}>
-                {tokenConfigured ? <IconCheckOutline14 className={styles.badgeIcon} /> : null}
-                {tokenConfigured === undefined
-                  ? 'không rõ'
-                  : tokenConfigured
-                    ? 'đã cấu hình'
-                    : 'chưa có'}
-              </span>
+              {/* A configured token needs no words: the tick alone reads at a
+                  glance, and the label beside it already says what it is. The
+                  unset states still need naming, so they keep their text. */}
+              {tokenConfigured ? (
+                <span
+                  className={`${styles.badge} ${styles.badgeOk}`}
+                  title={t('tokenConfigured')}
+                  aria-label={t('tokenConfigured')}
+                >
+                  <IconCheckOutline14 className={styles.badgeIcon} />
+                </span>
+              ) : (
+                <span className={styles.badge}>
+                  {tokenConfigured === undefined ? t('tokenUnknown') : t('tokenMissing')}
+                </span>
+              )}
             </div>
             <input
               id="telegram-token"
               className={styles.input}
               type="password"
               autoComplete="off"
-              placeholder={tokenConfigured ? 'Đã lưu — nhập để thay' : 'Dán token từ @BotFather'}
+              placeholder={
+                tokenConfigured ? t('tokenPlaceholderSet') : t('tokenPlaceholderEmpty')
+              }
               value={token}
               onChange={(event) => {
                 setToken(event.target.value);
                 setStatus('idle');
               }}
             />
-            <p className={styles.hint}>
-              Token nằm trong kho credential <span className={styles.code}>{tokenRef}</span>, không
-              nằm trong file cấu hình. Để trống nghĩa là giữ token đang có.
-            </p>
+            <p className={styles.hint}>{t('tokenHint', tokenRef)}</p>
           </div>
 
-          {toggle('enabled', 'Bật kênh Telegram')}
-          {field(
-            'allowedUsers',
-            'User được phép dùng bot',
-            'Telegram user id, cách nhau bởi dấu phẩy. Để trống nghĩa là ai cũng dùng được.',
-          )}
-          {field('workspaceRoot', 'Thư mục làm việc', 'Nơi agent chạy lệnh và đọc ghi file.')}
+          <div className={styles.field}>
+            <div className={styles.labelRow}>
+              <label className={styles.label} htmlFor="telegram-language">
+                {t('languageLabel')}
+              </label>
+              {overridden('language') ? (
+                <button
+                  type="button"
+                  className={styles.reset}
+                  onClick={() => void resetField('language')}
+                >
+                  {t('reset')}
+                </button>
+              ) : null}
+            </div>
+            <select
+              id="telegram-language"
+              className={styles.select}
+              value={language}
+              onChange={(event) => edit('language', event.target.value)}
+            >
+              {LANGUAGES.map((code) => (
+                <option key={code} value={code}>
+                  {LANGUAGE_NAMES[code]}
+                </option>
+              ))}
+            </select>
+            <p className={styles.hint}>{t('languageHint')}</p>
+          </div>
 
-          {needsRestart ? (
-            <p className={styles.warning}>
-              Token, thư mục làm việc và công tắc bật/tắt chỉ có hiệu lực sau khi khởi động lại DSH.
-            </p>
-          ) : null}
+          {toggle('enabled', t('enabledLabel'))}
+          {field('allowedUsers', t('allowedLabel'), t('allowedHint'))}
+          {field('workspaceRoot', t('workspaceLabel'), t('workspaceHint'))}
+
+          {needsRestart ? <p className={styles.warning}>{t('restartNotice')}</p> : null}
 
           <div className={styles.footer}>
-            {status === 'saved' ? <span className={styles.status}>Đã lưu</span> : null}
+            {status === 'saved' ? <span className={styles.status}>{t('saved')}</span> : null}
             {status === 'failed' ? (
-              <span className={styles.error}>Lưu không thành công — kiểm tra lại giá trị</span>
+              <span className={styles.error}>{t('saveFailed')}</span>
             ) : null}
             <button
               type="button"
@@ -313,7 +351,7 @@ function TelegramCard(props: any) {
               disabled={!dirty || status === 'saving'}
               onClick={discard}
             >
-              Huỷ
+              {t('discard')}
             </button>
             <button
               type="button"
@@ -321,7 +359,7 @@ function TelegramCard(props: any) {
               disabled={!dirty || status === 'saving'}
               onClick={() => void save()}
             >
-              {status === 'saving' ? 'Đang lưu…' : 'Lưu'}
+              {status === 'saving' ? t('saving') : t('save')}
             </button>
           </div>
         </div>

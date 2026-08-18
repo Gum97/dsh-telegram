@@ -35,8 +35,9 @@ const CSS = `
 .dshtg_labelRow{align-items:center;gap:8px;display:flex}
 .dshtg_label{color:var(--dsw-alias-label-primary);font-size:13px;font-weight:500;flex:1}
 .dshtg_badge{white-space:nowrap;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:999px;align-items:center;gap:4px;padding:1px 8px;font-size:12px;display:inline-flex}
-.dshtg_badgeOk{background:var(--dsw-alias-state-success-secondary);color:var(--dsw-alias-state-success-primary)}
+.dshtg_badgeOk{background:0 0;color:var(--dsw-alias-state-success-primary);padding:0;gap:0}
 .dshtg_badgeIcon{flex:none}
+.dshtg_select{font:inherit;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer}
 .dshtg_reset{appearance:none;font:inherit;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:0;padding:0;font-size:12px;text-decoration:underline}
 .dshtg_reset:hover{color:var(--dsw-alias-label-primary)}
 .dshtg_input{width:100%;box-sizing:border-box;font:inherit;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:7px 10px;font-size:13px}
@@ -91,6 +92,7 @@ export const styles = {
   badge: 'dshtg_badge',
   badgeOk: 'dshtg_badgeOk',
   badgeIcon: 'dshtg_badgeIcon',
+  select: 'dshtg_select',
   reset: 'dshtg_reset',
   input: 'dshtg_input',
   hint: 'dshtg_hint',
