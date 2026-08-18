@@ -1,10 +1,14 @@
 node_modules/
 
-# The client bundle is a build artifact, rebuilt by `npm run build:client` and
-# regenerated automatically before publishing. Keeping it out of git avoids
-# diff noise on every rebuild; `files` in package.json still ships it in the
-# tarball, which is what installers actually consume.
-lib/client.js
+# `lib/client.js` is deliberately COMMITTED, not ignored.
+#
+# It is a build artifact, and ignoring it is the tidier instinct — but this
+# package is installable straight from git, and pnpm 10 refuses to run
+# lifecycle scripts for a dependency unless the consumer allowlists it in
+# `onlyBuiltDependencies`. So `prepare` does not fire, nothing builds the
+# bundle, and the settings card silently does not exist while the Host half
+# works fine. Committing the artifact is what makes `pnpm add github:...`
+# actually work, at the cost of diff noise on rebuilds.
 lib/client.js.map
 
 *.tgz
