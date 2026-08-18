@@ -176,6 +176,19 @@ the message.
 the Web UI. The reply router tracks which turns it opened so those replies are
 not duplicated into the chat.
 
+## Known limitation: questions in a web profile
+
+The host allows exactly one user-questions provider process-wide, and in a web
+profile the Web bridge (`dsh-host-apiproxy`, loaded by
+`@deepseek-ai/dsh-web-app`) registers first. This channel then loses the slot,
+so a question raised during a Telegram turn is answered **in the browser**, and
+the bot appears to stop mid-turn until someone answers it there. The startup
+log says so explicitly.
+
+There is no per-session arbitration to hook into, so no amount of work in this
+plugin changes it: inline keyboards need a profile where nothing else claims
+the provider — a headless profile running the channel on its own.
+
 ## Tests
 
 ```sh
