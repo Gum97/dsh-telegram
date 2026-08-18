@@ -31,7 +31,6 @@
   },
   "files": [
     "lib",
-    "scripts/prepare.js",
     "LICENSE",
     "cordis.patch.yml",
     "README.md"
@@ -52,7 +51,6 @@
   },
   "scripts": {
     "build:client": "tsdown --config tsdown.client.ts",
-    "prepare": "node scripts/prepare.js",
     "prepublishOnly": "npm run build:client && npm test",
     "test": "node --test 'test/*.test.js'"
   },
