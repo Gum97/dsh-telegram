@@ -42,7 +42,15 @@ const NS = 'telegram';
 /** Fields that only take effect after DSH restarts, so the card can say so. */
 // `routeQuestions` belongs here because the provider slot is claimed once at
 // startup: flipping it later changes nothing until the channel starts again.
-const RESTART_FIELDS = new Set(['tokenRef', 'workspaceRoot', 'enabled', 'routeQuestions']);
+// `routeApprovals` is the same story with a different seam — the waterfall
+// listener is registered once, so the switch is read only at startup.
+const RESTART_FIELDS = new Set([
+  'tokenRef',
+  'workspaceRoot',
+  'enabled',
+  'routeQuestions',
+  'routeApprovals',
+]);
 
 type Descriptor = {
   ns: string;
@@ -339,6 +347,7 @@ function TelegramCard(props: any) {
 
           {toggle('enabled', t('enabledLabel'))}
           {toggle('routeQuestions', t('routeQuestionsLabel'), t('routeQuestionsHint'))}
+          {toggle('routeApprovals', t('routeApprovalsLabel'), t('routeApprovalsHint'))}
           {field('allowedUsers', t('allowedLabel'), t('allowedHint'))}
           {field('workspaceRoot', t('workspaceLabel'), t('workspaceHint'))}
 
