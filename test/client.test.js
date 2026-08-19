@@ -229,3 +229,73 @@ scenario('other fields pass through untouched', () => {
     workspaceRoot: '/tmp/x',
   });
 });
+
+scenario('a save is sent as `patch`, the field settings.update actually names', () => {
+  // `settings.update` merges over the user layer and its request schema names
+  // that field `patch`; `section` belongs to `replace`. The wrong name is
+  // refused as a bad request before the service sees it, and the card can only
+  // say "save failed" — no field to correct, the same refusal for every key.
+  // That was the real bug behind a Settings card nobody could save.
+  const { exported } = loadBundle();
+  const request = exported.updateRequest({ workspaceRoot: '/tmp/x' }, 7);
+
+  assert.equal(request.ns, 'telegram');
+  assert.deepEqual(request.patch, { workspaceRoot: '/tmp/x' });
+  assert.equal(request.expectedRevision, 7);
+  assert.ok(!('section' in request), '`section` is settings.replace, and would be rejected here');
+});
+
+scenario('a save with no prior read sends no revision rather than a fake one', () => {
+  // `expectedRevision` is the optimistic fence. Undefined means "unfenced",
+  // which is right before the first descriptor lands; inventing 0 would claim
+  // a revision the namespace genuinely holds and lose the very conflict the
+  // fence exists to catch.
+  const { exported } = loadBundle();
+
+  assert.equal(exported.updateRequest({ enabled: false }, undefined).expectedRevision, undefined);
+});
+
+scenario('resetting a field addresses it as a path array', () => {
+  // The host's op schema requires `string[]` because nested keys need real
+  // structure. A bare `'language'` is a bad request, so every Reset button
+  // failed at the wire.
+  const { exported } = loadBundle();
+  const request = exported.unsetRequest('language', 3);
+
+  assert.equal(request.ns, 'telegram');
+  assert.deepEqual(request.ops, [{ op: 'unset', path: ['language'] }]);
+  assert.equal(request.expectedRevision, 3);
+});
+
+scenario('every settings write in the bundle goes through the checked helpers', () => {
+  // The helpers above are only worth testing if nothing bypasses them: an edit
+  // that inlines a payload at the call site would restore the original bug
+  // while both helper tests stayed green. Requiring every write to pass a
+  // helper call keeps the wire shape in one tested place.
+  const source = readFileSync(BUNDLE, 'utf8');
+
+  const writes = [...source.matchAll(/api\.settings\.(update|replace|mutate)\(([^)]*)/g)];
+  assert.ok(writes.length > 0, 'the card must write settings somewhere');
+
+  for (const [, method, argument] of writes) {
+    assert.match(
+      argument,
+      /^(updateRequest|unsetRequest)\(/,
+      `settings.${method} builds its payload inline instead of through a tested helper`,
+    );
+  }
+});
+
+scenario('every unset op addresses a path array, never a bare key', () => {
+  // The host's op schema requires `string[]`. A bare key is refused at the
+  // wire, and the refusal resolves rather than throws — so it reads as success
+  // unless the payload is right in the first place.
+  const source = readFileSync(BUNDLE, 'utf8');
+
+  const ops = [...source.matchAll(/op:\s*"unset"\s*,\s*path:\s*(.)/g)];
+  assert.ok(ops.length > 0, 'the reset path must exist in the bundle');
+
+  for (const [, nextChar] of ops) {
+    assert.equal(nextChar, '[', 'a mutate path must be an array of segments, never a bare key');
+  }
+});

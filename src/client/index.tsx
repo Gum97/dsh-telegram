@@ -154,11 +154,9 @@ function TelegramCard(props: any) {
     const section = normalizeSection(draft);
     if (Object.keys(section).length > 0) {
       try {
-        const response = await api.settings.update({
-          ns: NS,
-          section,
-          expectedRevision: descriptor?.revision,
-        });
+        const response = await api.settings.update(
+          updateRequest(section, descriptor?.revision),
+        );
         if (!response?.result?.ok) {
           // A stale revision or a rejected value: keep the drafts so the user
           // can correct them, and re-read so the next attempt is fenced right.
@@ -190,11 +188,14 @@ function TelegramCard(props: any) {
     // redacted read and replacing it wholesale would delete anything the wire
     // never returned.
     try {
-      await api.settings.mutate({
-        ns: NS,
-        ops: [{ op: 'unset', path: key }],
-        expectedRevision: descriptor?.revision,
-      });
+      const response = await api.settings.mutate(unsetRequest(key, descriptor?.revision));
+      // A refusal resolves rather than throws, exactly as it does in `save`.
+      // Reading only the throw left a rejected reset looking like a success.
+      if (!response?.result?.ok) {
+        setStatus('failed');
+        await reload();
+        return;
+      }
     } catch {
       setStatus('failed');
       return;
@@ -387,6 +388,34 @@ function normalizeSection(section: Draft): Record<string, unknown> {
   return out;
 }
 
+/**
+ * Build the `settings.update` payload.
+ *
+ * The field is `patch`, not `section`. `update` merges over the user layer and
+ * its request schema names that field; `section` belongs to `replace`, which
+ * rewrites the layer wholesale. Sending the wrong one is refused as a bad
+ * request before the call reaches the service, so the card could only report
+ * the generic "save failed" — no field to correct, no value at fault, the same
+ * refusal for every key. Both writers go through here so the shape is one
+ * fact, checked by a test rather than by reading a bundle.
+ */
+function updateRequest(section: Record<string, unknown>, expectedRevision?: number) {
+  return { ns: NS, patch: section, expectedRevision };
+}
+
+/**
+ * Build the `settings.mutate` payload that removes one override.
+ *
+ * A path is an array of segments, not a dotted string: nested keys need real
+ * structure, so the host's op schema requires `string[]` and refuses a bare
+ * key. That refusal resolves rather than throws, which is why the caller must
+ * read `result.ok` — a Reset that only caught exceptions reported success
+ * while the override stayed exactly where it was.
+ */
+function unsetRequest(key: string, expectedRevision?: number) {
+  return { ns: NS, ops: [{ op: 'unset', path: [key] }], expectedRevision };
+}
+
 export const inject = ['slots', 'connection'];
 
 export function apply(ctx: any) {
@@ -405,4 +434,4 @@ export function apply(ctx: any) {
   });
 }
 
-export { normalizeSection };
+export { normalizeSection, unsetRequest, updateRequest };
